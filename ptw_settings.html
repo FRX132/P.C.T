@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTW Trading Terminal - Einstellungen</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="ptw_style.css">
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <nav class="side-nav">
+        <div class="nav-logo">
+            <img src="ptw_logo.png" alt="PTW Logo" class="logo">
+            <div class="logo-text">
+                <span class="logo-main">Personal TradingView</span>
+                <span class="logo-sub">Settings</span>
+            </div>
+        </div>
+
+        <div class="nav-sections">
+            <a href="ptw.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="ptw_settings.html" class="nav-item active">
+                <div class="nav-icon">⚙️</div>
+                <span class="nav-label">Einstellungen</span>
+            </a>
+            <a href="ptw_docs.html" class="nav-item">
+                <div class="nav-icon">📘</div>
+                <span class="nav-label">Dokumentation</span>
+            </a>
+            <a href="ptw_telegram_setup.html" class="nav-item">
+                <div class="nav-icon">🤖</div>
+                <span class="nav-label">Telegram Setup</span>
+            </a>
+            <a href="#" class="nav-item disabled">
+                <div class="nav-icon">📦</div>
+                <span class="nav-label">Backup (Alt)</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Right Main Content Area -->
+    <div class="main-content">
+        <header>
+            <div class="header-title-area">
+                <div class="logo-tag">SETTINGS</div>
+                <h1>System-Einstellungen</h1>
+            </div>
+        </header>
+
+        <div class="main-container" style="grid-template-columns: 1fr 1fr; gap: 30px; max-width: 1200px; margin-top: 10px;">
+            
+            <!-- Panel Left: Broker API Setup -->
+            <div class="panel">
+                <div class="panel-title">Broker Echtzeit-Feed</div>
+                <div class="panel-description">
+                    Wähle deine Echtzeit-Datenquelle aus. Du kannst standardmäßig Yahoo Finance kostenlos nutzen oder dich mit deinem Broker verbinden.
+                </div>
+                
+                <div class="input-group">
+                    <label>Datenquelle auswählen</label>
+                    <select class="input-field" id="feed-source" onchange="toggleFeedFields()" style="background:#0c0f17; color:#fff; border: 1px solid var(--border-color);">
+                        <option value="yahoo">Yahoo Finance (Kostenlos, Keine Anmeldung)</option>
+                        <option value="forex">Forex.com (GAIN Capital API)</option>
+                        <option value="mt5">MetaTrader 5 (Vantage / MT5 via MetaApi)</option>
+                    </select>
+                </div>
+
+                <!-- Forex.com Fields -->
+                <div id="fx-fields-area" style="display: none;">
+                    <div class="input-group">
+                        <label>Forex.com Username / E-Mail</label>
+                        <input type="text" class="input-field" id="fx-username" placeholder="name@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Passwort</label>
+                        <input type="password" class="input-field" id="fx-password" placeholder="••••••••">
+                    </div>
+                    <div class="input-group">
+                        <label>Application Key (AppKey)</label>
+                        <input type="password" class="input-field" id="fx-appkey" placeholder="AppKey hier einfügen...">
+                    </div>
+                    <div class="input-group">
+                        <label>Server-Typ</label>
+                        <select class="input-field" id="fx-server" style="background:#0c0f17; color:#fff; border: 1px solid var(--border-color);">
+                            <option value="demo">Demo-Konto (Preprod Server)</option>
+                            <option value="live">Live-Konto (Production Server)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- MT5 / MetaApi Fields -->
+                <div id="mt5-fields-area" style="display: none;">
+                    <div class="panel-description" style="background: rgba(0, 188, 212, 0.05); padding: 10px; border-radius: 6px; border-left: 3px solid var(--color-info); margin-bottom: 15px;">
+                        Verbinde dein Vantage MT5 (oder jeden MT5-Broker) über **MetaApi.cloud**. Erstelle ein Konto, füge dein Broker-Konto hinzu und kopiere den Token & Account ID hierher.
+                    </div>
+                    <div class="input-group">
+                        <label>MetaApi API Token</label>
+                        <input type="password" class="input-field" id="mt5-token" placeholder="MetaApi Token hier einfügen...">
+                    </div>
+                    <div class="input-group">
+                        <label>MetaApi Account ID</label>
+                        <input type="text" class="input-field" id="mt5-account-id" placeholder="z.B. a1b2c3d4-e5f6-7a8b...">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn-exec long" style="flex: 1;" onclick="saveBrokerSettings()">Einstellungen speichern</button>
+                    <button class="btn-test" id="test-conn-btn" style="width: auto; padding: 12px 20px; margin-top: 0; display: none;" onclick="testBrokerConnection()">Verbindung testen</button>
+                </div>
+                <div class="tg-status" id="broker-test-log" style="margin-top: 15px; display: none;">Status: Bereit</div>
+            </div>
+
+            <!-- Panel Right: Telegram Configuration & Signals -->
+            <div class="panel">
+                <div class="panel-title">Telegram Signal Webhook</div>
+                <div class="panel-description">
+                    Konfiguriere deinen Telegram-Kanal oder Gruppenchat, um Signale aus deinem Terminal zu versenden.
+                </div>
+                
+                <div class="input-group">
+                    <label>Telegram Bot Token</label>
+                    <input type="password" class="input-field" id="tg-token" placeholder="123456789:ABCdefGhI...">
+                </div>
+                <div class="input-group">
+                    <label>Telegram Chat ID</label>
+                    <input type="text" class="input-field" id="tg-chatid" placeholder="-100123456789">
+                </div>
+                <div class="input-group">
+                    <div class="toggle-container">
+                        <span class="toggle-label highlighted">Auto-Senden bei Breakout</span>
+                        <label class="switch">
+                            <input type="checkbox" id="tg-autosend">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn-exec long" style="flex: 1;" onclick="saveTgSettings()">Speichern</button>
+                    <button class="btn-test" style="width: auto; padding: 12px 20px; margin-top: 0;" onclick="sendTestTelegram()">Test-Signal senden</button>
+                </div>
+                <div class="tg-status" id="tg-log" style="margin-top: 15px;">Telegram-Status: Bereit</div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function toggleFeedFields() {
+            const source = document.getElementById('feed-source').value;
+            const fxArea = document.getElementById('fx-fields-area');
+            const mt5Area = document.getElementById('mt5-fields-area');
+            const testBtn = document.getElementById('test-conn-btn');
+            const logEl = document.getElementById('broker-test-log');
+
+            fxArea.style.display = "none";
+            mt5Area.style.display = "none";
+            testBtn.style.display = "none";
+            logEl.style.display = "none";
+
+            if (source === "forex") {
+                fxArea.style.display = "block";
+                testBtn.style.display = "block";
+            } else if (source === "mt5") {
+                mt5Area.style.display = "block";
+                testBtn.style.display = "block";
+            }
+        }
+
+        function loadAllSettings() {
+            // Load Active Feed Source
+            const source = localStorage.getItem('ptw_feed_source') || 'yahoo';
+            document.getElementById('feed-source').value = source;
+
+            // Load Forex.com Settings
+            document.getElementById('fx-username').value = localStorage.getItem('ptw_fx_username') || '';
+            document.getElementById('fx-password').value = localStorage.getItem('ptw_fx_password') || '';
+            document.getElementById('fx-appkey').value = localStorage.getItem('ptw_fx_appkey') || '';
+            document.getElementById('fx-server').value = localStorage.getItem('ptw_fx_server') || 'demo';
+
+            // Load MT5 Settings
+            document.getElementById('mt5-token').value = localStorage.getItem('ptw_mt5_token') || '';
+            document.getElementById('mt5-account-id').value = localStorage.getItem('ptw_mt5_account_id') || '';
+
+            toggleFeedFields();
+
+            // Load Telegram Settings
+            const token = localStorage.getItem('ptw_tg_token') || '';
+            const chatid = localStorage.getItem('ptw_tg_chatid') || '';
+            const autosend = localStorage.getItem('ptw_tg_autosend') === 'true';
+            
+            document.getElementById('tg-token').value = token;
+            document.getElementById('tg-chatid').value = chatid;
+            document.getElementById('tg-autosend').checked = autosend;
+        }
+
+        function saveBrokerSettings() {
+            const source = document.getElementById('feed-source').value;
+            localStorage.setItem('ptw_feed_source', source);
+
+            if (source === "forex") {
+                localStorage.setItem('ptw_fx_username', document.getElementById('fx-username').value);
+                localStorage.setItem('ptw_fx_password', document.getElementById('fx-password').value);
+                localStorage.setItem('ptw_fx_appkey', document.getElementById('fx-appkey').value);
+                localStorage.setItem('ptw_fx_server', document.getElementById('fx-server').value);
+                localStorage.setItem('ptw_fx_enabled', 'true');
+                localStorage.setItem('ptw_mt5_enabled', 'false');
+            } else if (source === "mt5") {
+                localStorage.setItem('ptw_mt5_token', document.getElementById('mt5-token').value);
+                localStorage.setItem('ptw_mt5_account_id', document.getElementById('mt5-account-id').value);
+                localStorage.setItem('ptw_fx_enabled', 'false');
+                localStorage.setItem('ptw_mt5_enabled', 'true');
+            } else {
+                localStorage.setItem('ptw_fx_enabled', 'false');
+                localStorage.setItem('ptw_mt5_enabled', 'false');
+            }
+
+            const logEl = document.getElementById('broker-test-log');
+            logEl.style.display = "block";
+            logEl.className = "tg-status success";
+            logEl.innerText = "Einstellungen erfolgreich gespeichert!";
+        }
+
+        function saveTgSettings() {
+            const token = document.getElementById('tg-token').value;
+            const chatid = document.getElementById('tg-chatid').value;
+            const autosend = document.getElementById('tg-autosend').checked;
+
+            localStorage.setItem('ptw_tg_token', token);
+            localStorage.setItem('ptw_tg_chatid', chatid);
+            localStorage.setItem('ptw_tg_autosend', autosend);
+
+            const logEl = document.getElementById('tg-log');
+            logEl.className = "tg-status success";
+            logEl.innerText = "Telegram Einstellungen gespeichert!";
+        }
+
+        async function testBrokerConnection() {
+            const source = document.getElementById('feed-source').value;
+            const logEl = document.getElementById('broker-test-log');
+            logEl.style.display = "block";
+
+            if (source === "forex") {
+                const username = document.getElementById('fx-username').value;
+                const password = document.getElementById('fx-password').value;
+                const appkey = document.getElementById('fx-appkey').value;
+                const server = document.getElementById('fx-server').value;
+
+                if (!username || !password || !appkey) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = "Fehler: Alle FOREX.com-Felder müssen ausgefüllt sein!";
+                    return;
+                }
+
+                logEl.className = "tg-status";
+                logEl.style.borderLeftColor = "var(--color-info)";
+                logEl.style.color = "var(--color-info)";
+                logEl.innerText = "Verbindung zu FOREX.com wird geprüft...";
+
+                const baseUrl = server === 'live' 
+                    ? 'https://ciapi.marketpartners.com/ServiceAPI'
+                    : 'https://ciapipreprod.marketpartners.com/ServiceAPI';
+
+                const url = `${baseUrl}/session`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+
+                try {
+                    const res = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            UserName: username,
+                            Password: password,
+                            AppKey: appkey
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.Session) {
+                        logEl.className = "tg-status success";
+                        logEl.innerText = `FOREX.com Login erfolgreich! Session Token erhalten.`;
+                    } else {
+                        logEl.className = "tg-status error";
+                        logEl.innerText = `API Fehler: ${data.ErrorMessage || 'Ungültige Zugangsdaten'}`;
+                    }
+                } catch (err) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = `Netzwerkfehler: ${err.message}`;
+                }
+            } else if (source === "mt5") {
+                const token = document.getElementById('mt5-token').value;
+                const accountId = document.getElementById('mt5-account-id').value;
+
+                if (!token || !accountId) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = "Fehler: MetaApi Token und Account ID werden benötigt!";
+                    return;
+                }
+
+                logEl.className = "tg-status";
+                logEl.style.borderLeftColor = "var(--color-info)";
+                logEl.style.color = "var(--color-info)";
+                logEl.innerText = "Verbindung zu MetaApi (MT5) wird geprüft...";
+
+                const url = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${accountId}`;
+
+                try {
+                    const res = await fetch(url, {
+                        method: 'GET',
+                        headers: { 
+                            'auth-header': token,
+                            'auth-token': token
+                        }
+                    });
+                    const data = await res.json();
+                    if (res.ok && (data._id || data.id)) {
+                        logEl.className = "tg-status success";
+                        logEl.innerText = `Erfolgreich mit MT5-Konto (${data.name}) verbunden! Status: ${data.connectionStatus}`;
+                    } else {
+                        logEl.className = "tg-status error";
+                        logEl.innerText = `Fehler: ${data.message || 'Konto nicht gefunden'}`;
+                    }
+                } catch (err) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = `Netzwerkfehler: ${err.message}`;
+                }
+            }
+        }
+
+        async function sendTestTelegram() {
+            const token = document.getElementById('tg-token').value;
+            const chatid = document.getElementById('tg-chatid').value;
+            const logEl = document.getElementById('tg-log');
+
+            if (!token || !chatid) {
+                logEl.className = "tg-status error";
+                logEl.innerText = "Fehler: Bot-Token und Chat ID fehlen!";
+                return;
+            }
+
+            const text = "🚨 *PTW Terminal* 🚨\n\nDies ist eine Testnachricht aus den Einstellungen.";
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatid,
+                        text: text,
+                        parse_mode: 'Markdown'
+                    })
+                });
+
+                const resData = await response.json();
+                if (response.ok && resData.ok) {
+                    logEl.className = "tg-status success";
+                    logEl.innerText = "Testnachricht erfolgreich gesendet!";
+                } else {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = `Telegram API Fehler: ${resData.description}`;
+                }
+            } catch (err) {
+                logEl.className = "tg-status error";
+                logEl.innerText = `Netzwerkfehler: ${err.message}`;
+            }
+        }
+
+        // Init
+        loadAllSettings();
+    </script>
+</body>
+</html>

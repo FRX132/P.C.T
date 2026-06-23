@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTW Trading Terminal - Personal TradingView</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lightweight Charts & Lightstreamer -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://unpkg.com/lightstreamer-client-web@9.0.0/lightstreamer.min.js"></script>
+    
+    <link rel="stylesheet" href="ptw_style.css">
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <nav class="side-nav">
+        <div class="nav-logo">
+            <img src="ptw_logo.png" alt="PTW Logo" class="logo">
+            <div class="logo-text">
+                <span class="logo-main">Personal TradingView</span>
+                <span class="logo-sub">Dashboard</span>
+            </div>
+        </div>
+
+        <div class="nav-sections">
+            <!-- Home (Dashboard) - Currently the Main Page -->
+            <a href="ptw.html" class="nav-item active">
+                <div class="nav-icon">🏠</div>
+                <span class="nav-label">Dashboard</span>
+            </a>
+
+            <!-- Settings -->
+            <a href="ptw_settings.html" class="nav-item">
+                <div class="nav-icon">⚙️</div>
+                <span class="nav-label">Einstellungen</span>
+            </a>
+
+            <!-- Documentation -->
+            <a href="ptw_docs.html" class="nav-item">
+                <div class="nav-icon">📘</div>
+                <span class="nav-label">Dokumentation</span>
+            </a>
+
+            <!-- Telegram Setup (Helper Page) -->
+            <a href="ptw_telegram_setup.html" class="nav-item">
+                <div class="nav-icon">🤖</div>
+                <span class="nav-label">Telegram Setup</span>
+            </a>
+
+            <!-- Backup (Archived/Legacy) -->
+            <a href="#" class="nav-item disabled">
+                <div class="nav-icon">📦</div>
+                <span class="nav-label">Backup (Alt)</span>
+            </a>
+        </div>
+
+        <div class="nav-section-title">Schnellauswahl</div>
+        <div class="nav-watchlist">
+            <div class="watchlist-item active" data-sym="EURUSD" onclick="selectSymbol('EURUSD')">
+                <span class="watchlist-sym">EURUSD</span>
+                <span class="watchlist-price" id="watch-EURUSD">-</span>
+            </div>
+            <div class="watchlist-item" data-sym="GBPUSD" onclick="selectSymbol('GBPUSD')">
+                <span class="watchlist-sym">GBPUSD</span>
+                <span class="watchlist-price" id="watch-GBPUSD">-</span>
+            </div>
+            <div class="watchlist-item" data-sym="USDJPY" onclick="selectSymbol('USDJPY')">
+                <span class="watchlist-sym">USDJPY</span>
+                <span class="watchlist-price" id="watch-USDJPY">-</span>
+            </div>
+            <div class="watchlist-item" data-sym="XAUUSD" onclick="selectSymbol('XAUUSD')">
+                <span class="watchlist-sym">XAUUSD</span>
+                <span class="watchlist-price" id="watch-XAUUSD">-</span>
+            </div>
+            <div class="watchlist-item" data-sym="XAGUSD" onclick="selectSymbol('XAGUSD')">
+                <span class="watchlist-sym">XAGUSD</span>
+                <span class="watchlist-price" id="watch-XAGUSD">-</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Right Main Content Area -->
+    <div class="main-content">
+        <header>
+            <div class="header-title-area">
+                <div class="logo-tag">PTW</div>
+                <h1>Personal TradingView Terminal</h1>
+            </div>
+            <div class="live-ticker">
+                <div class="ticker-item">
+                    <span class="ticker-label">Aktiver Ticker</span>
+                    <span class="ticker-val" id="ticker-sym">EURUSD</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label">Live Preis</span>
+                    <span class="ticker-val" id="ticker-price">1.08542</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label">Verbindung</span>
+                    <span class="conn-status">
+                        <span class="conn-dot"></span>
+                        Echtzeit-Datenfeed (Yahoo Finance)
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+        <!-- Left: Chart Container -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-info">
+                    <span class="asset-title" id="chart-asset-name">EUR/USD</span>
+                    <span class="tf-pill">15M Chart</span>
+                </div>
+                <div class="chart-hud">
+                    RSI (14): <span id="rsi-hud">52</span> | 
+                    ATR (14): <span id="atr-hud">0.00085</span>
+                </div>
+            </div>
+            <div id="chart-container"></div>
+        </div>
+
+        <!-- Right: Control Panels -->
+        <div class="control-section">
+            
+            <!-- Panel 1: Asset & Execution -->
+            <div class="panel">
+                <div class="panel-title">Asset & Order Execution</div>
+                <div class="input-group">
+                    <label>Symbol auswählen / suchen</label>
+                    <div class="search-wrapper">
+                        <input type="text" id="symbol-search" class="input-field" placeholder="Suchen... (z.B. EURCHF, USDJPY, XAUUSD...)" onfocus="showSymbolList()" oninput="filterSymbols()" onkeydown="handleSearchKey(event)">
+                        <div id="symbol-results">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time data toggle -->
+                <div class="input-group">
+                    <div class="toggle-container compact">
+                        <span class="toggle-label highlighted">Echtzeit-Kurse (Yahoo Finance API)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="realtime-data-toggle" checked onchange="toggleRealtimeData()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="exec-grid">
+                    <button class="btn-exec long" onclick="triggerBreakout('LONG')">
+                        BUY BREAKOUT
+                        <span>Trigger 1:3 Setup</span>
+                    </button>
+                    <button class="btn-exec short" onclick="triggerBreakout('SHORT')">
+                        SELL BREAKOUT
+                        <span>Trigger 1:3 Setup</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel 2: Risk Calculator -->
+            <div class="panel">
+                <div class="panel-title">1:3 Risk Management (CRV)</div>
+                <div class="panel-description">
+                    Berechnet dynamisch 3 Take Profits (1:1, 1:2, 1:3) basierend auf dem ATR-Puffer.
+                </div>
+                <div id="risk-stats-hud">
+                    <div class="crv-stat-row">
+                        <span>Aktueller Einstieg:</span>
+                        <span id="calc-entry">-</span>
+                    </div>
+                    <div class="crv-stat-row sl-row">
+                        <span>Stop Loss (SL):</span>
+                        <span id="calc-sl">-</span>
+                    </div>
+                    <div class="crv-stat-row tp-row">
+                        <span>TP1 (1:1) - 33% Positionsgrösse:</span>
+                        <span id="calc-tp1">-</span>
+                    </div>
+                    <div class="crv-stat-row tp-row">
+                        <span>TP2 (1:2) - 33% Positionsgrösse:</span>
+                        <span id="calc-tp2">-</span>
+                    </div>
+                    <div class="crv-stat-row tp-row">
+                        <span>TP3 (1:3) - 34% Positionsgrösse:</span>
+                        <span id="calc-tp3">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Telegram Signal Bot -->
+            <div class="panel">
+                <div class="panel-title">Telegram Signal Webhook</div>
+                <div class="input-group">
+                    <label>Telegram Bot Token</label>
+                    <input type="password" class="input-field" id="tg-token" placeholder="123456789:ABCdefGhI..." onchange="saveTgSettings()">
+                </div>
+                <div class="input-group">
+                    <label>Telegram Chat ID</label>
+                    <input type="text" class="input-field" id="tg-chatid" placeholder="-100123456789" onchange="saveTgSettings()">
+                </div>
+                <div class="toggle-container">
+                    <span class="toggle-label">Auto-Senden bei Breakout</span>
+                    <label class="switch">
+                        <input type="checkbox" id="tg-autosend" onchange="saveTgSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <button class="btn-test" onclick="sendTestTelegram()">Signal Test senden</button>
+                <div class="tg-status" id="tg-log">Telegram-Status: Bereit</div>
+            </div>
+        </div>
+
+        <!-- Bottom: Trade History Table -->
+        <div class="table-panel">
+            <div class="panel-title">
+                Aktive & Historische Trade Ideen
+                <button class="btn-test compact" onclick="clearHistory()">Verlauf leeren</button>
+            </div>
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>Zeit</th>
+                        <th>Symbol</th>
+                        <th>Richtung</th>
+                        <th>Einstieg</th>
+                        <th>Stop Loss</th>
+                        <th>TP1 (1:1)</th>
+                        <th>TP2 (1:2)</th>
+                        <th>TP3 (1:3)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-tbody">
+                    <tr>
+                        <td colspan="9" class="empty-row">Keine aktiven Signale simuliert. Klicken Sie oben auf BUY/SELL Breakout.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> <!-- end main-content -->
+
+    <script src="ptw.js"></script>
+</body>
+</html>
