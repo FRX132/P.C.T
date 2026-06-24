@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTW Trading Terminal - Dokumentation</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="ptw_style.css">
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <nav class="side-nav">
+        <div class="nav-logo">
+            <img src="ptw_logo.png" alt="PTW Logo" class="logo">
+            <div class="logo-text">
+                <span class="logo-main">Personal TradingView</span>
+                <span class="logo-sub">Documentation</span>
+            </div>
+        </div>
+
+        <div class="nav-sections">
+            <a href="ptw.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="ptw_settings.html" class="nav-item">
+                <div class="nav-icon">⚙️</div>
+                <span class="nav-label">Einstellungen</span>
+            </a>
+            <a href="ptw_docs.html" class="nav-item active">
+                <div class="nav-icon">📘</div>
+                <span class="nav-label">Dokumentation</span>
+            </a>
+            <a href="ptw_telegram_setup.html" class="nav-item">
+                <div class="nav-icon">🤖</div>
+                <span class="nav-label">Telegram Setup</span>
+            </a>
+            <a href="#" class="nav-item disabled">
+                <div class="nav-icon">📦</div>
+                <span class="nav-label">Backup (Alt)</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Right Main Content Area -->
+    <div class="main-content">
+        <header>
+            <div class="header-title-area">
+                <div class="logo-tag">DOCUMENTATION</div>
+                <h1>System-Dokumentation & Handbuch</h1>
+            </div>
+        </header>
+
+        <div class="main-container" style="grid-template-columns: 1fr; gap: 30px; max-width: 1000px; margin-top: 10px;">
+            
+            <!-- Welcome Panel -->
+            <div class="panel">
+                <div class="panel-title">Über das PTW Trading Terminal</div>
+                <div class="panel-description" style="line-height: 1.8;">
+                    Das <strong>Personal TradingView Terminal</strong> ist ein leistungsstarkes, clientseitiges Analyse- und Signal-Management-Dashboard. Es ermöglicht Tradern, Echtzeit-Marktdaten verschiedener Quellen zu analysieren, Breakout-Setups mit automatischem Risikomanagement (1:3 CRV) zu berechnen und Handelssignale direkt per Telegram zu versenden.
+                </div>
+            </div>
+
+            <!-- Features Panel -->
+            <div class="panel">
+                <div class="panel-title">Kern-Funktionen</div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                    
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--color-info); margin-bottom: 8px;">📶 Multi-Feed Echtzeit-Kurse</h4>
+                        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+                            Unterstützt vier Datenquellen: Finanzen.net (kostenloser Standard, clientseitig via Yahoo Finance-Engine zwecks Umgehung von CORS/Cloudflare-Sperren), Forex.com WebSockets, MetaTrader 5 (MetaApi) und Massive.com API.
+                        </p>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--color-info); margin-bottom: 8px;">📏 Automatische 1:3 Risiko-Projektion</h4>
+                        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+                            Berechnet bei Ausbrüchen (Breakouts) basierend auf der Average True Range (ATR) die perfekten Einstiegs-, Stop-Loss- und drei Take-Profit-Level (TP1, TP2, TP3) und zeichnet diese live in den Chart.
+                        </p>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--color-info); margin-bottom: 8px;">🚨 Telegram Signal-Verteiler</h4>
+                        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+                            Versendet bei Klick oder Triggerung vollautomatisch formatierte Ausbruchsignale an deine Telegram-Chats, -Gruppen oder -Kanäle mit detaillierten Einstiegs- und TP-Werten.
+                        </p>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--color-info); margin-bottom: 8px;">📊 Technische Indikatoren</h4>
+                        <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+                            Enthält die Live-Berechnung des Relative Strength Index (RSI 14) und der Average True Range (ATR 14) im HUD sowie einen gleitenden Exponential Moving Average (EMA 50) direkt im Chart.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Risk Management Details -->
+            <div class="panel">
+                <div class="panel-title">1:3 CRV Strategie & Ausführung</div>
+                <div class="panel-description" style="line-height: 1.8; color: var(--text-main);">
+                    Das Terminal implementiert ein professionelles Multi-Target-Ausstiegsmodell:
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                        <li><strong>Stop Loss (SL)</strong>: Wird dynamisch auf Basis der ATR (14) berechnet, um Rauschen im Markt abzufangen.</li>
+                        <li><strong>TP1 (1:1 CRV)</strong>: Nimmt 33% des Positionsvolumens vom Tisch.</li>
+                        <li><strong>TP2 (1:2 CRV)</strong>: Nimmt weitere 33% des Positionsvolumens vom Tisch.</li>
+                        <li><strong>TP3 (1:3 CRV)</strong>: Schließt die restlichen 34% der Position.</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(255, 152, 0, 0.05); border-left: 3px solid var(--color-warning); border-radius: 4px; font-size: 13px;">
+                        <strong>Hinweis zur Live-Überwachung</strong>: Wenn ein Signal aktiv ist, prüft das Terminal bei jedem eintreffenden Tick, ob die Preislinien berührt werden, und aktualisiert den Status in der historischen Trade-Tabelle am unteren Rand.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Developer Notice -->
+            <div class="panel">
+                <div class="panel-title">Sicherheit & Datenhaltung</div>
+                <div class="panel-description" style="line-height: 1.8; color: var(--text-muted); font-size: 13px;">
+                    Da diese Anwendung vollständig im Browser läuft, werden <strong>keine Passwörter, API-Keys oder Telegram-Daten auf externe Server übertragen</strong> (außer direkt an die jeweiligen APIs der Broker/Telegram). Alle Einstellungen werden verschlüsselt im lokalen Speicher deines Browsers (<code>localStorage</code>) abgelegt und bleiben auch beim Schließen des Fensters erhalten.
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

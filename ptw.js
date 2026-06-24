@@ -10,6 +10,54 @@ let mt5Token = null;
 let mt5AccountId = null;
 let mt5Region = "new-york";
 
+// ───────────────────── Massive.com Connection Setup
+let massiveEnabled = false;
+let massiveApiKey = null;
+
+const FINANZEN_NET_URLS = {
+    EURUSD: "https://www.finanzen.net/devisen/dollarkurs",
+    GBPUSD: "https://www.finanzen.net/devisen/pfund-dollar-kurs",
+    USDJPY: "https://www.finanzen.net/devisen/dollar-yen-kurs",
+    USDCHF: "https://www.finanzen.net/devisen/dollar-franken-kurs",
+    USDCAD: "https://www.finanzen.net/devisen/dollar-kanadischer_dollar-kurs",
+    AUDUSD: "https://www.finanzen.net/devisen/australischer_dollar-us_dollar-kurs",
+    NZDUSD: "https://www.finanzen.net/devisen/neuseeland_dollar-us_dollar-kurs",
+    EURGBP: "https://www.finanzen.net/devisen/euro-pfund-kurs",
+    EURJPY: "https://www.finanzen.net/devisen/euro-yen-kurs",
+    EURCHF: "https://www.finanzen.net/devisen/euro-franken-kurs",
+    EURAUD: "https://www.finanzen.net/devisen/euro-australischer_dollar-kurs",
+    EURCAD: "https://www.finanzen.net/devisen/euro-kanadischer_dollar-kurs",
+    EURNZD: "https://www.finanzen.net/devisen/euro-neuseeland_dollar-kurs",
+    GBPJPY: "https://www.finanzen.net/devisen/pfund-yen-kurs",
+    GBPCHF: "https://www.finanzen.net/devisen/pfund-franken-kurs",
+    GBPAUD: "https://www.finanzen.net/devisen/pfund-australischer_dollar-kurs",
+    GBPCAD: "https://www.finanzen.net/devisen/pfund-kanadischer_dollar-kurs",
+    GBPNZD: "https://www.finanzen.net/devisen/pfund-neuseeland_dollar-kurs",
+    AUDJPY: "https://www.finanzen.net/devisen/australischer_dollar-yen-kurs",
+    AUDCHF: "https://www.finanzen.net/devisen/australischer_dollar-franken-kurs",
+    AUDCAD: "https://www.finanzen.net/devisen/australischer_dollar-kanadischer_dollar-kurs",
+    AUDNZD: "https://www.finanzen.net/devisen/australischer_dollar-neuseeland_dollar-kurs",
+    CADJPY: "https://www.finanzen.net/devisen/kanadischer_dollar-yen-kurs",
+    CADCHF: "https://www.finanzen.net/devisen/kanadischer_dollar-franken-kurs",
+    CHFJPY: "https://www.finanzen.net/devisen/franken-yen-kurs",
+    NZDJPY: "https://www.finanzen.net/devisen/neuseeland_dollar-yen-kurs",
+    NZDCHF: "https://www.finanzen.net/devisen/neuseeland_dollar-franken-kurs",
+    NZDCAD: "https://www.finanzen.net/devisen/neuseeland_dollar-kanadischer_dollar-kurs",
+    USDTRY: "https://www.finanzen.net/devisen/dollar-tuerkische_lira-kurs",
+    EURTRY: "https://www.finanzen.net/devisen/euro-tuerkische_lira-kurs",
+    USDZAR: "https://www.finanzen.net/devisen/dollar-rand-kurs",
+    USDMXN: "https://www.finanzen.net/devisen/dollar-mexikanischer_peso-kurs",
+    USDSGD: "https://www.finanzen.net/devisen/dollar-singapur_dollar-kurs",
+    USDHKD: "https://www.finanzen.net/devisen/dollar-hongkong_dollar-kurs",
+    USDCNH: "https://www.finanzen.net/devisen/dollar-yuan_renminbi-kurs",
+    USDSEK: "https://www.finanzen.net/devisen/dollar-schwedische_krone-kurs",
+    USDNOK: "https://www.finanzen.net/devisen/dollar-norwegische_krone-kurs",
+    USDDKK: "https://www.finanzen.net/devisen/dollar-daenische_krone-kurs",
+    USDPLN: "https://www.finanzen.net/devisen/dollar-polnischer_zloty-kurs",
+    XAUUSD: "https://www.finanzen.net/rohstoffe/goldpreis",
+    XAGUSD: "https://www.finanzen.net/rohstoffe/silberpreis"
+};
+
 const FOREX_MARKET_IDS = {
     EURUSD: 400481117,
     GBPUSD: 400481118,
@@ -235,36 +283,84 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ───────────────────── Timeframe Configuration & State
+let currentTimeframe = '15m';
+const TIMEFRAMES = {
+    "1m":  { interval: "1m",  range: "1d" },
+    "5m":  { interval: "5m",  range: "5d" },
+    "15m": { interval: "15m", range: "5d" },
+    "1h":  { interval: "1h",  range: "14d" },
+    "4h":  { interval: "60m", range: "30d" },
+    "1D":  { interval: "1d",  range: "60d" }
+};
+
+function calculateEMA(data, period = 50) {
+    if (data.length < period) return [];
+    const k = 2 / (period + 1);
+    let emaArray = [];
+    
+    // Calculate initial SMA
+    let sma = 0;
+    for (let i = 0; i < period; i++) {
+        sma += data[i].close;
+    }
+    sma = sma / period;
+    emaArray.push({ time: data[period - 1].time, value: sma });
+    
+    let prevEma = sma;
+    for (let i = period; i < data.length; i++) {
+        const emaVal = data[i].close * k + prevEma * (1 - k);
+        emaArray.push({ time: data[i].time, value: emaVal });
+        prevEma = emaVal;
+    }
+    return emaArray;
+}
+
 // ───────────────────── Lightweight Charts Init
 const domElement = document.getElementById('chart-container');
 const chart = LightweightCharts.createChart(domElement, {
+    autoSize: true,
     layout: {
-        background: { type: 'solid', color: '#131722' },
-        textColor: '#d1d4dc',
+        background: { type: 'solid', color: '#f0f3fa' },
+        textColor: '#131722',
         fontFamily: "'Plus Jakarta Sans', sans-serif"
     },
     grid: {
-        vertLines: { color: '#2b2b43' },
-        horzLines: { color: '#2b2b43' },
+        vertLines: { color: '#e0e3eb', style: LightweightCharts.LineStyle.Solid },
+        horzLines: { color: '#e0e3eb', style: LightweightCharts.LineStyle.Solid },
     },
     crosshair: {
         mode: LightweightCharts.CrosshairMode.Normal,
+        vertLine: { color: '#787b86', width: 1, style: LightweightCharts.LineStyle.Dashed },
+        horzLine: { color: '#787b86', width: 1, style: LightweightCharts.LineStyle.Dashed },
     },
     rightPriceScale: {
-        borderColor: '#485c7b',
+        borderColor: '#e0e3eb',
     },
     timeScale: {
-        borderColor: '#485c7b',
+        borderColor: '#e0e3eb',
         timeVisible: true,
     },
 });
 
 const candlestickSeries = chart.addCandlestickSeries({
-    upColor: '#26a69a',
-    downColor: '#ef5350',
-    borderVisible: false,
-    wickUpColor: '#26a69a',
-    wickDownColor: '#ef5350',
+    upColor: '#089981',
+    downColor: '#f23645',
+    borderVisible: true,
+    borderColor: '#089981',
+    wickUpColor: '#089981',
+    wickDownColor: '#f23645',
+    borderUpColor: '#089981',
+    borderDownColor: '#f23645',
+});
+
+// EMA 50 line series
+const emaSeries = chart.addLineSeries({
+    color: '#ff4a4a',
+    lineWidth: 1.5,
+    title: 'EMA (50)',
+    priceLineVisible: false,
+    lastValueVisible: false,
 });
 
 // ───────────────────── UI Active Lines Array
@@ -277,9 +373,32 @@ function clearPriceLines() {
 
 // ───────────────────── Yahoo Finance Symbol Mapping
 function getYahooSymbol(sym) {
-    if (sym === 'XAUUSD') return 'GC=F';
-    if (sym === 'XAGUSD') return 'SI=F';
+    // Spot Gold (XAUUSD=X) and Spot Silver (XAGUSD=X) are mapped as standard forex symbols on Yahoo Finance
     return sym + '=X';
+}
+
+async function updateAllWatchlistPrices() {
+    if (!realtimeDataEnabled) return;
+    
+    const symbols = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "XAGUSD"];
+    const yahooSymbols = symbols.map(s => getYahooSymbol(s)).join(",");
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooSymbols}`;
+    
+    try {
+        const data = await fetchWithCORSProxy(url);
+        if (data && data.quoteResponse && data.quoteResponse.result) {
+            data.quoteResponse.result.forEach(quote => {
+                let baseSym = quote.symbol.replace("=X", "");
+                const watchPriceSpan = document.getElementById(`watch-${baseSym}`);
+                if (watchPriceSpan && quote.regularMarketPrice !== undefined) {
+                    const precision = ASSETS[baseSym] ? ASSETS[baseSym].precision : 5;
+                    watchPriceSpan.innerText = quote.regularMarketPrice.toFixed(precision);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("Failed to update watchlist prices:", e);
+    }
 }
 
 // ───────────────────── CORS Proxy Rotation Fetcher
@@ -363,7 +482,8 @@ function calculateATR(data, period = 14) {
 // ───────────────────── Real-time Data Updates (No Simulation)
 async function updateChartWithRealData(symbol) {
     const yahooSym = getYahooSymbol(symbol);
-    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=15m&range=5d`;
+    const tfConfig = TIMEFRAMES[currentTimeframe] || TIMEFRAMES["15m"];
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=${tfConfig.interval}&range=${tfConfig.range}`;
     
     try {
         const data = await fetchWithCORSProxy(targetUrl);
@@ -395,6 +515,10 @@ async function updateChartWithRealData(symbol) {
 
         chartData = formattedData;
         candlestickSeries.setData(chartData);
+
+        // Calculate and display EMA (50)
+        const emaData = calculateEMA(chartData, 50);
+        emaSeries.setData(emaData);
         
         const lastCandle = chartData[chartData.length - 1];
         const oldPrice = livePrice;
@@ -432,6 +556,24 @@ async function updateChartWithRealData(symbol) {
     }
 }
 
+// Timeframe switcher
+async function setTimeframe(tf) {
+    currentTimeframe = tf;
+    
+    // Update active class on buttons
+    const buttons = document.querySelectorAll('.tf-btn');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('data-tf') === tf) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Reload active symbol with new timeframe data
+    await changeAsset(currentSymbol);
+}
+
 // Initialize or Switch Asset Data
 async function changeAsset(symbol) {
     currentSymbol = symbol;
@@ -440,6 +582,13 @@ async function changeAsset(symbol) {
     document.getElementById('ticker-sym').innerText = symbol;
     document.getElementById('chart-asset-name').innerText = assetInfo.name;
     document.getElementById('ticker-price').innerText = "Laden...";
+    
+    // Update Finanzen.net Reference Link
+    const finanzenLink = document.getElementById('finanzen-link');
+    if (finanzenLink) {
+        const url = FINANZEN_NET_URLS[symbol] || `https://www.finanzen.net/suchergebnis.asp?strSuchString=${symbol}`;
+        finanzenLink.href = url;
+    }
     
     clearPriceLines();
     activeTrade = null;
@@ -468,6 +617,11 @@ async function changeAsset(symbol) {
     if (mt5Enabled && mt5Token && mt5AccountId) {
         fetchMetaApiTick();
     }
+
+    // Fetch instant Massive tick if enabled
+    if (massiveEnabled && massiveApiKey) {
+        fetchMassiveTick();
+    }
 }
 
 // Live ticks updater
@@ -482,6 +636,12 @@ async function refreshRealtimeFeed() {
     // If MT5 is active, poll MetaApi instead of Yahoo Finance!
     if (mt5Enabled && mt5Token && mt5AccountId) {
         await fetchMetaApiTick();
+        return;
+    }
+
+    // If Massive is active, poll Massive instead of Yahoo Finance!
+    if (massiveEnabled && massiveApiKey) {
+        await fetchMassiveTick();
         return;
     }
     
@@ -827,6 +987,12 @@ function loadSettings() {
         connectToMT5();
     }
 
+    // Load Massive Settings
+    massiveEnabled = localStorage.getItem('ptw_massive_enabled') === 'true';
+    if (massiveEnabled) {
+        connectToMassive();
+    }
+
     // Set connection text and toggle label depending on active feed
     const feedSource = localStorage.getItem('ptw_feed_source') || 'yahoo';
     const connText = document.querySelector('.conn-status');
@@ -834,16 +1000,18 @@ function loadSettings() {
     
     if (toggleLabel) {
         if (feedSource === 'yahoo') {
-            toggleLabel.innerText = "Echtzeit-Kurse (Yahoo Finance API)";
+            toggleLabel.innerText = "Echtzeit-Kurse (Finanzen.net)";
         } else if (feedSource === 'forex') {
             toggleLabel.innerText = "Echtzeit-Kurse (Forex.com Live)";
         } else if (feedSource === 'mt5') {
             toggleLabel.innerText = "Echtzeit-Kurse (MetaTrader 5 API)";
+        } else if (feedSource === 'massive') {
+            toggleLabel.innerText = "Echtzeit-Kurse (Massive.com API)";
         }
     }
 
     if (connText && feedSource === 'yahoo') {
-        connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Echtzeit-Datenfeed (Yahoo Finance)`;
+        connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Echtzeit-Datenfeed (Finanzen.net)`;
     }
 }
 
@@ -929,7 +1097,7 @@ async function fetchMetaApiTick() {
             console.error(`MT5 tick fetch error: Status ${res.status}`);
             const connText = document.querySelector('.conn-status');
             if (connText) {
-                connText.innerHTML = `<span class="conn-dot" style="background:var(--color-short);"></span>MT5 Fehler - Fallback auf Yahoo`;
+                connText.innerHTML = `<span class="conn-dot" style="background:var(--color-short);"></span>MT5 Fehler - Fallback auf Finanzen.net`;
             }
             await updateChartWithRealData(symbol);
         }
@@ -938,6 +1106,72 @@ async function fetchMetaApiTick() {
         await updateChartWithRealData(symbol);
     }
 }
+
+// ───────────────────── Massive.com Integration
+async function connectToMassive() {
+    if (!massiveEnabled) return;
+
+    massiveApiKey = localStorage.getItem('ptw_massive_apikey');
+
+    if (!massiveApiKey) {
+        console.warn("Massive.com API Key is missing in settings.");
+        return;
+    }
+
+    const connText = document.querySelector('.conn-status');
+    if (connText) {
+        connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Echtzeit-Datenfeed (Massive.com Live)`;
+    }
+
+    // Immediately poll tick for current symbol
+    fetchMassiveTick();
+}
+
+async function fetchMassiveTick() {
+    if (!massiveEnabled || !massiveApiKey) return;
+    
+    const symbol = currentSymbol;
+    // Format to Massive.com standard (e.g. C:EUR-USD)
+    let massiveSymbol = symbol;
+    if (symbol.length === 6) {
+        massiveSymbol = 'C:' + symbol.substring(0, 3) + '-' + symbol.substring(3);
+    } else {
+        massiveSymbol = 'C:' + symbol;
+    }
+    
+    const url = `https://api.massive.com/v3/quotes/${massiveSymbol}?apiKey=${massiveApiKey}&limit=1`;
+
+    try {
+        const res = await fetch(url);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === "OK" && data.results && data.results.length > 0) {
+                const quote = data.results[0];
+                const price = (quote.bid_price + quote.ask_price) / 2;
+                
+                processNewLiveTick(symbol, price);
+                
+                const connText = document.querySelector('.conn-status');
+                if (connText) {
+                    connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Echtzeit-Datenfeed (Massive.com Live - ${symbol})`;
+                }
+            } else {
+                console.warn(`Massive symbols quotes empty response for ${massiveSymbol}:`, data);
+            }
+        } else {
+            console.error(`Massive tick fetch error: Status ${res.status}`);
+            const connText = document.querySelector('.conn-status');
+            if (connText) {
+                connText.innerHTML = `<span class="conn-dot" style="background:var(--color-short);"></span>Massive Fehler - Fallback auf Finanzen.net`;
+            }
+            await updateChartWithRealData(symbol);
+        }
+    } catch (e) {
+        console.error("Error fetching Massive tick:", e);
+        await updateChartWithRealData(symbol);
+    }
+}
+
 
 // ───────────────────── Forex.com Lightstreamer Integration
 async function connectToForexDotCom() {
@@ -1092,7 +1326,9 @@ function processNewLiveTick(symbol, currentPrice) {
 // ───────────────────── Event Listeners & Loops
 // Resize Chart
 window.addEventListener('resize', () => {
-    chart.applyOptions({ width: domElement.clientWidth });
+    // Lightweight Charts autoSize: true handles resizing automatically.
+    // We fit the content scale on resize.
+    chart.timeScale().fitContent();
 });
 
 // Initialize Page

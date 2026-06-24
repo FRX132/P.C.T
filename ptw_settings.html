@@ -16,13 +16,13 @@
 
     <!-- Left Sidebar -->
     <nav class="side-nav">
-        <div class="nav-logo">
+        <a href="ptw.html" class="nav-logo">
             <img src="ptw_logo.png" alt="PTW Logo" class="logo">
             <div class="logo-text">
                 <span class="logo-main">Personal TradingView</span>
                 <span class="logo-sub">Settings</span>
             </div>
-        </div>
+        </a>
 
         <div class="nav-sections">
             <a href="ptw.html" class="nav-item">
@@ -63,20 +63,24 @@
             <div class="panel">
                 <div class="panel-title">Broker Echtzeit-Feed</div>
                 <div class="panel-description">
-                    Wähle deine Echtzeit-Datenquelle aus. Du kannst standardmäßig Yahoo Finance kostenlos nutzen oder dich mit deinem Broker verbinden.
+                    Wähle deine Echtzeit-Datenquelle aus. Du kannst standardmäßig den kostenlosen Finanzen.net-Datenfeed nutzen (Referenz-Kurse siehe <a href="https://www.finanzen.net" target="_blank" style="color: var(--color-info); text-decoration: underline;">finanzen.net ↗</a>) oder dich mit deinem Broker verbinden.
                 </div>
                 
                 <div class="input-group">
                     <label>Datenquelle auswählen</label>
                     <select class="input-field" id="feed-source" onchange="toggleFeedFields()" style="background:#0c0f17; color:#fff; border: 1px solid var(--border-color);">
-                        <option value="yahoo">Yahoo Finance (Kostenlos, Keine Anmeldung)</option>
+                        <option value="yahoo">Finanzen.net Referenz (Kostenlos)</option>
                         <option value="forex">Forex.com (GAIN Capital API)</option>
                         <option value="mt5">MetaTrader 5 (Vantage / MT5 via MetaApi)</option>
+                        <option value="massive">Massive.com API (U.S. Stocks, Forex & Commodities)</option>
                     </select>
                 </div>
 
                 <!-- Forex.com Fields -->
                 <div id="fx-fields-area" style="display: none;">
+                    <div class="panel-description" style="background: rgba(0, 188, 212, 0.05); padding: 10px; border-radius: 6px; border-left: 3px solid var(--color-info); margin-bottom: 15px;">
+                        Benötigt ein Forex.com API-Konto. <a href="https://www.forex.com/en-us/trading-platforms/api/" target="_blank" style="color: var(--color-info); text-decoration: underline; font-weight: 600;">Hier geht's zur API-Key Erstellung ↗</a>
+                    </div>
                     <div class="input-group">
                         <label>Forex.com Username / E-Mail</label>
                         <input type="text" class="input-field" id="fx-username" placeholder="name@email.com">
@@ -101,7 +105,7 @@
                 <!-- MT5 / MetaApi Fields -->
                 <div id="mt5-fields-area" style="display: none;">
                     <div class="panel-description" style="background: rgba(0, 188, 212, 0.05); padding: 10px; border-radius: 6px; border-left: 3px solid var(--color-info); margin-bottom: 15px;">
-                        Verbinde dein Vantage MT5 (oder jeden MT5-Broker) über **MetaApi.cloud**. Erstelle ein Konto, füge dein Broker-Konto hinzu und kopiere den Token & Account ID hierher.
+                        Verbinde dein Vantage MT5 über **MetaApi.cloud**. <a href="https://metaapi.cloud" target="_blank" style="color: var(--color-info); text-decoration: underline; font-weight: 600;">MetaApi Token & Account ID hier erstellen ↗</a>
                     </div>
                     <div class="input-group">
                         <label>MetaApi API Token</label>
@@ -110,6 +114,17 @@
                     <div class="input-group">
                         <label>MetaApi Account ID</label>
                         <input type="text" class="input-field" id="mt5-account-id" placeholder="z.B. a1b2c3d4-e5f6-7a8b...">
+                    </div>
+                </div>
+
+                <!-- Massive.com Fields -->
+                <div id="massive-fields-area" style="display: none;">
+                    <div class="panel-description" style="background: rgba(0, 188, 212, 0.05); padding: 10px; border-radius: 6px; border-left: 3px solid var(--color-info); margin-bottom: 15px;">
+                        Erstelle ein Entwickler-Konto auf **Massive.com**, um API-Schlüssel für Live-Kurse zu generieren. <a href="https://massive.com/stocks" target="_blank" style="color: var(--color-info); text-decoration: underline; font-weight: 600;">Massive.com API Key hier erstellen ↗</a>
+                    </div>
+                    <div class="input-group">
+                        <label>Massive.com API Key</label>
+                        <input type="password" class="input-field" id="massive-apikey" placeholder="Massive.com API Key hier einfügen...">
                     </div>
                 </div>
 
@@ -160,11 +175,13 @@
             const source = document.getElementById('feed-source').value;
             const fxArea = document.getElementById('fx-fields-area');
             const mt5Area = document.getElementById('mt5-fields-area');
+            const massiveArea = document.getElementById('massive-fields-area');
             const testBtn = document.getElementById('test-conn-btn');
             const logEl = document.getElementById('broker-test-log');
 
             fxArea.style.display = "none";
             mt5Area.style.display = "none";
+            massiveArea.style.display = "none";
             testBtn.style.display = "none";
             logEl.style.display = "none";
 
@@ -173,6 +190,9 @@
                 testBtn.style.display = "block";
             } else if (source === "mt5") {
                 mt5Area.style.display = "block";
+                testBtn.style.display = "block";
+            } else if (source === "massive") {
+                massiveArea.style.display = "block";
                 testBtn.style.display = "block";
             }
         }
@@ -191,6 +211,9 @@
             // Load MT5 Settings
             document.getElementById('mt5-token').value = localStorage.getItem('ptw_mt5_token') || '';
             document.getElementById('mt5-account-id').value = localStorage.getItem('ptw_mt5_account_id') || '';
+
+            // Load Massive.com Settings
+            document.getElementById('massive-apikey').value = localStorage.getItem('ptw_massive_apikey') || '';
 
             toggleFeedFields();
 
@@ -215,14 +238,22 @@
                 localStorage.setItem('ptw_fx_server', document.getElementById('fx-server').value);
                 localStorage.setItem('ptw_fx_enabled', 'true');
                 localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_massive_enabled', 'false');
             } else if (source === "mt5") {
                 localStorage.setItem('ptw_mt5_token', document.getElementById('mt5-token').value);
                 localStorage.setItem('ptw_mt5_account_id', document.getElementById('mt5-account-id').value);
                 localStorage.setItem('ptw_fx_enabled', 'false');
                 localStorage.setItem('ptw_mt5_enabled', 'true');
+                localStorage.setItem('ptw_massive_enabled', 'false');
+            } else if (source === "massive") {
+                localStorage.setItem('ptw_massive_apikey', document.getElementById('massive-apikey').value);
+                localStorage.setItem('ptw_fx_enabled', 'false');
+                localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_massive_enabled', 'true');
             } else {
                 localStorage.setItem('ptw_fx_enabled', 'false');
                 localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_massive_enabled', 'false');
             }
 
             const logEl = document.getElementById('broker-test-log');
@@ -329,6 +360,36 @@
                     } else {
                         logEl.className = "tg-status error";
                         logEl.innerText = `Fehler: ${data.message || 'Konto nicht gefunden'}`;
+                    }
+                } catch (err) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = `Netzwerkfehler: ${err.message}`;
+                }
+            } else if (source === "massive") {
+                const apiKey = document.getElementById('massive-apikey').value;
+
+                if (!apiKey) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = "Fehler: Massive.com API Key wird benötigt!";
+                    return;
+                }
+
+                logEl.className = "tg-status";
+                logEl.style.borderLeftColor = "var(--color-info)";
+                logEl.style.color = "var(--color-info)";
+                logEl.innerText = "Verbindung zu Massive.com wird geprüft...";
+
+                const url = `https://api.massive.com/v3/quotes/C:EUR-USD?apiKey=${apiKey}&limit=1`;
+
+                try {
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    if (res.ok && data.status === "OK") {
+                        logEl.className = "tg-status success";
+                        logEl.innerText = `Erfolgreich mit Massive.com verbunden!`;
+                    } else {
+                        logEl.className = "tg-status error";
+                        logEl.innerText = `Fehler: ${data.error || 'Ungültiger API-Schlüssel oder kein Zugriff'}`;
                     }
                 } catch (err) {
                     logEl.className = "tg-status error";

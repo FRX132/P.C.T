@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTW Trading Terminal - Telegram Setup</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="ptw_style.css">
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <nav class="side-nav">
+        <div class="nav-logo">
+            <img src="ptw_logo.png" alt="PTW Logo" class="logo">
+            <div class="logo-text">
+                <span class="logo-main">Personal TradingView</span>
+                <span class="logo-sub">Telegram Setup</span>
+            </div>
+        </div>
+
+        <div class="nav-sections">
+            <a href="ptw.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <span class="nav-label">Dashboard</span>
+            </a>
+            <a href="ptw_settings.html" class="nav-item">
+                <div class="nav-icon">⚙️</div>
+                <span class="nav-label">Einstellungen</span>
+            </a>
+            <a href="ptw_docs.html" class="nav-item">
+                <div class="nav-icon">📘</div>
+                <span class="nav-label">Dokumentation</span>
+            </a>
+            <a href="ptw_telegram_setup.html" class="nav-item active">
+                <div class="nav-icon">🤖</div>
+                <span class="nav-label">Telegram Setup</span>
+            </a>
+            <a href="#" class="nav-item disabled">
+                <div class="nav-icon">📦</div>
+                <span class="nav-label">Backup (Alt)</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Right Main Content Area -->
+    <div class="main-content">
+        <header>
+            <div class="header-title-area">
+                <div class="logo-tag">TELEGRAM BOT</div>
+                <h1>Telegram Signal-Einrichtung</h1>
+            </div>
+        </header>
+
+        <div class="main-container" style="grid-template-columns: 1fr; gap: 30px; max-width: 1000px; margin-top: 10px;">
+            
+            <!-- Instructions Panel -->
+            <div class="panel">
+                <div class="panel-title">Schritt-für-Schritt-Anleitung zur Signal-Einrichtung</div>
+                <div class="panel-description" style="margin-bottom: 25px;">
+                    Folge dieser einfachen Anleitung, um deinen eigenen Telegram-Bot zu erstellen und Signale direkt aus dem Terminal zu empfangen.
+                </div>
+
+                <!-- Step 1 -->
+                <div class="setup-step" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                    <h3 style="color: var(--color-info); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <span style="background: rgba(0, 188, 212, 0.1); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px;">1</span>
+                        Telegram Bot erstellen (BotFather)
+                    </h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 10px;">
+                        Der BotFather ist der offizielle Telegram-Bot zur Erstellung anderer Bots.
+                    </p>
+                    <ul style="color: var(--text-main); margin-left: 20px; line-height: 1.8;">
+                        <li>Suche in Telegram nach dem Benutzer <a href="https://t.me/BotFather" target="_blank" style="color: var(--color-info); text-decoration: underline; font-weight: 500;">@BotFather</a>.</li>
+                        <li>Starte den Chat und sende den Befehl <strong><code>/newbot</code></strong>.</li>
+                        <li>Gib einen <strong>Namen</strong> für deinen Bot ein (z.B. <em>PTW Signal Bot</em>).</li>
+                        <li>Wähle einen eindeutigen <strong>Username</strong>, der auf "bot" endet (z.B. <em>ptw_signal_bot</em>).</li>
+                        <li>Kopiere das generierte <strong>HTTP API Token</strong> (z.B. <code>123456789:ABCdefGhI...</code>). Bewahre dieses geheim auf!</li>
+                    </ul>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="setup-step" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                    <h3 style="color: var(--color-info); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <span style="background: rgba(0, 188, 212, 0.1); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px;">2</span>
+                        Chat ID / Gruppen-ID herausfinden
+                    </h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 10px;">
+                        Du musst herausfinden, wohin der Bot die Signale senden soll. Das kann dein privater Chat, eine Gruppe oder ein Kanal sein.
+                    </p>
+                    <div style="background: rgba(20, 26, 40, 0.4); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 15px;">
+                        <h4 style="color: #fff; margin-bottom: 10px;">Option A: Privater Chat (Direktnachrichten)</h4>
+                        <ul style="color: var(--text-main); margin-left: 20px; line-height: 1.8; margin-bottom: 15px;">
+                            <li>Suche in Telegram nach deinem neu erstellten Bot und starte den Chat mit <strong><code>/start</code></strong>.</li>
+                            <li>Suche nach dem Bot <a href="https://t.me/userinfobot" target="_blank" style="color: var(--color-info); text-decoration: underline;">@userinfobot</a> und starte ihn.</li>
+                            <li>Er sendet dir sofort deine persönliche <strong>Chat ID</strong> (eine positive Zahl, z.B. <code>987654321</code>).</li>
+                        </ul>
+                        
+                        <h4 style="color: #fff; margin-bottom: 10px;">Option B: Telegram Gruppe oder Kanal</h4>
+                        <ul style="color: var(--text-main); margin-left: 20px; line-height: 1.8;">
+                            <li>Erstelle eine neue Gruppe oder einen Kanal in Telegram.</li>
+                            <li>Füge deinen erstellten Bot als <strong>Mitglied / Administrator</strong> hinzu.</li>
+                            <li>Sende eine beliebige Testnachricht in die Gruppe.</li>
+                            <li>Rufe im Browser folgende URL auf (ersetze <code>TOKEN</code> durch deinen Bot-Token):<br>
+                                <code style="color: var(--color-warning); background: #0c0f17; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; font-size: 12px; word-break: break-all;">https://api.telegram.org/botTOKEN/getUpdates</code>
+                            </li>
+                            <li>Suche im zurückgegebenen Text nach dem Abschnitt <code>"chat":{"id": -100xxxxxxxxxx, ...}</code>.</li>
+                            <li>Die ID mit dem Minus-Zeichen (z.B. <code>-100123456789</code>) ist deine Gruppen- oder Kanal-ID.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="setup-step" style="margin-bottom: 15px;">
+                    <h3 style="color: var(--color-info); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <span style="background: rgba(0, 188, 212, 0.1); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px;">3</span>
+                        Im Terminal eintragen & aktivieren
+                    </h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
+                        Sobald du die Daten hast, kannst du sie im Terminal speichern.
+                    </p>
+                    <ul style="color: var(--text-main); margin-left: 20px; line-height: 1.8; margin-bottom: 20px;">
+                        <li>Gehe auf die Seite <a href="ptw_settings.html" style="color: var(--color-info); text-decoration: underline; font-weight: 500;">Einstellungen</a>.</li>
+                        <li>Trage deinen <strong>Telegram Bot Token</strong> und deine <strong>Chat ID</strong> in das Telegram-Panel ein.</li>
+                        <li>Klicke auf <strong>Speichern</strong>.</li>
+                        <li>Klicke auf <strong>Test-Signal senden</strong>, um die Verbindung sofort zu testen. Du solltest eine Nachricht in Telegram erhalten!</li>
+                        <li>Aktiviere optional <strong>Auto-Senden bei Breakout</strong>, damit Breakout-Signale bei Klick auf BUY/SELL automatisch versendet werden.</li>
+                    </ul>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>
