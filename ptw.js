@@ -373,8 +373,11 @@ function clearPriceLines() {
 
 // ───────────────────── Yahoo Finance Symbol Mapping
 function getYahooSymbol(sym) {
-    // Spot Gold (XAUUSD=X) and Spot Silver (XAGUSD=X) are mapped as standard forex symbols on Yahoo Finance
-    return sym + '=X';
+    // If it's a standard 6-character forex/metal symbol, append '=X' (unless it already contains '=' or '-')
+    if (sym.length === 6 && !sym.includes('=') && !sym.includes('-') && !sym.includes('^')) {
+        return sym + '=X';
+    }
+    return sym;
 }
 
 async function updateAllWatchlistPrices() {
@@ -415,7 +418,7 @@ async function fetchWithCORSProxy(targetUrl) {
             if (res.ok) {
                 const text = await res.text();
                 const data = JSON.parse(text);
-                if (data && data.chart && data.chart.result) {
+                if (data) {
                     return data;
                 }
             }
@@ -543,9 +546,12 @@ async function updateChartWithRealData(symbol) {
         const realRSI = calculateRSI(chartData);
         const realATR = calculateATR(chartData);
         document.getElementById('rsi-hud').innerText = realRSI;
-        document.getElementById('atr-hud').innerText = realATR.toFixed(ASSETS[symbol].precision);
+        const precision = (ASSETS[symbol] && ASSETS[symbol].precision !== undefined) ? ASSETS[symbol].precision : 5;
+        document.getElementById('atr-hud').innerText = realATR.toFixed(precision);
         
-        ASSETS[symbol].atr = realATR;
+        if (ASSETS[symbol]) {
+            ASSETS[symbol].atr = realATR;
+        }
 
         // Monitor active trade rules against the new real tick
         checkTradeConditions();
@@ -577,7 +583,7 @@ async function setTimeframe(tf) {
 // Initialize or Switch Asset Data
 async function changeAsset(symbol) {
     currentSymbol = symbol;
-    const assetInfo = ASSETS[symbol];
+    const assetInfo = ASSETS[symbol] || { name: symbol, precision: 5, basePrice: 1.0, step: 0.00008, atr: 0.00075, cat: "Custom" };
     
     document.getElementById('ticker-sym').innerText = symbol;
     document.getElementById('chart-asset-name').innerText = assetInfo.name;
@@ -649,7 +655,11 @@ async function refreshRealtimeFeed() {
 }
 
 function formatPrice(val) {
-    return val.toFixed(ASSETS[currentSymbol].precision);
+    if (val === undefined || val === null || isNaN(val)) return "-";
+    const precision = (ASSETS[currentSymbol] && ASSETS[currentSymbol].precision !== undefined) 
+        ? ASSETS[currentSymbol].precision 
+        : 5;
+    return val.toFixed(precision);
 }
 
 // ───────────────────── Risk Management Calculation & Lines Drawing
@@ -670,9 +680,9 @@ function updateRiskCalculatorHUD(trade) {
 }
 
 function triggerBreakout(type) {
-    const assetInfo = ASSETS[currentSymbol];
+    const assetInfo = ASSETS[currentSymbol] || { name: currentSymbol, precision: 5, basePrice: 1.0, step: 0.00008, atr: 0.00075, cat: "Custom" };
     const entry = livePrice;
-    const atr = assetInfo.atr;
+    const atr = assetInfo.atr || 0.00075;
     const multiplier = 1.0; 
     const risk = atr * multiplier;
     
@@ -845,16 +855,17 @@ function renderTradesTable() {
             statusBadge = `<span class="badge hit">${t.status}</span>`;
         }
 
+        const precision = (ASSETS[t.symbol] && ASSETS[t.symbol].precision !== undefined) ? ASSETS[t.symbol].precision : 5;
         return `
             <tr>
                 <td>${t.time}</td>
                 <td>${t.symbol}</td>
                 <td><span class="badge ${t.type.toLowerCase()}">${t.type}</span></td>
-                <td>${t.entry.toFixed(ASSETS[t.symbol].precision)}</td>
-                <td>${t.sl.toFixed(ASSETS[t.symbol].precision)}</td>
-                <td>${t.tp1.toFixed(ASSETS[t.symbol].precision)}</td>
-                <td>${t.tp2.toFixed(ASSETS[t.symbol].precision)}</td>
-                <td>${t.tp3.toFixed(ASSETS[t.symbol].precision)}</td>
+                <td>${t.entry.toFixed(precision)}</td>
+                <td>${t.sl.toFixed(precision)}</td>
+                <td>${t.tp1.toFixed(precision)}</td>
+                <td>${t.tp2.toFixed(precision)}</td>
+                <td>${t.tp3.toFixed(precision)}</td>
                 <td>${statusBadge}</td>
             </tr>
         `;
@@ -902,7 +913,7 @@ async function sendTelegramSignal(trade) {
     }
 
     const isLong = trade.type === 'LONG';
-    const precision = ASSETS[trade.symbol].precision;
+    const precision = (ASSETS[trade.symbol] && ASSETS[trade.symbol].precision !== undefined) ? ASSETS[trade.symbol].precision : 5;
     const text = 
 `🚨 *BREAKOUT SIGNAL PRO* 🚨
 
