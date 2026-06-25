@@ -321,13 +321,14 @@ const domElement = document.getElementById('chart-container');
 const chart = LightweightCharts.createChart(domElement, {
     autoSize: true,
     layout: {
-        background: { type: 'solid', color: '#f0f3fa' },
-        textColor: '#131722',
-        fontFamily: "'Plus Jakarta Sans', sans-serif"
+        background: { type: 'solid', color: '#0c0f17' },
+        textColor: '#f0f3fa',
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        attributionLogo: false
     },
     grid: {
-        vertLines: { color: '#e0e3eb', style: LightweightCharts.LineStyle.Solid },
-        horzLines: { color: '#e0e3eb', style: LightweightCharts.LineStyle.Solid },
+        vertLines: { color: 'rgba(43, 43, 67, 0.3)', style: LightweightCharts.LineStyle.Solid },
+        horzLines: { color: 'rgba(43, 43, 67, 0.3)', style: LightweightCharts.LineStyle.Solid },
     },
     crosshair: {
         mode: LightweightCharts.CrosshairMode.Normal,
@@ -335,23 +336,23 @@ const chart = LightweightCharts.createChart(domElement, {
         horzLine: { color: '#787b86', width: 1, style: LightweightCharts.LineStyle.Dashed },
     },
     rightPriceScale: {
-        borderColor: '#e0e3eb',
+        borderColor: 'rgba(43, 43, 67, 0.5)',
     },
     timeScale: {
-        borderColor: '#e0e3eb',
+        borderColor: 'rgba(43, 43, 67, 0.5)',
         timeVisible: true,
     },
 });
 
 const candlestickSeries = chart.addCandlestickSeries({
-    upColor: '#089981',
-    downColor: '#f23645',
+    upColor: '#26a69a',
+    downColor: '#ef5350',
     borderVisible: true,
-    borderColor: '#089981',
-    wickUpColor: '#089981',
-    wickDownColor: '#f23645',
-    borderUpColor: '#089981',
-    borderDownColor: '#f23645',
+    borderColor: '#26a69a',
+    wickUpColor: '#26a69a',
+    wickDownColor: '#ef5350',
+    borderUpColor: '#26a69a',
+    borderDownColor: '#ef5350',
 });
 
 // EMA 50 line series
@@ -482,8 +483,85 @@ function calculateATR(data, period = 14) {
     return atr;
 }
 
+// ───────────────────── Mock / Simulated Data Generation Fallback
+function generateMockHistory(symbol) {
+    const assetInfo = ASSETS[symbol] || { name: symbol, precision: 5, basePrice: 1.0000, step: 0.00008, atr: 0.00075, cat: "Custom" };
+    const precision = assetInfo.precision;
+    const basePrice = assetInfo.basePrice || 1.0;
+    const atr = assetInfo.atr || 0.00075;
+    
+    const count = 100;
+    const data = [];
+    const now = Math.floor(Date.now() / 1000);
+    const intervalSeconds = 15 * 60; // 15m default
+    let price = basePrice;
+    
+    for (let i = count; i > 0; i--) {
+        const time = now - i * intervalSeconds;
+        const change = (Math.random() - 0.5) * atr * 2;
+        const open = price;
+        const close = price + change;
+        const high = Math.max(open, close) + Math.random() * atr * 0.5;
+        const low = Math.min(open, close) - Math.random() * atr * 0.5;
+        
+        data.push({
+            time: time,
+            open: parseFloat(open.toFixed(precision)),
+            high: parseFloat(high.toFixed(precision)),
+            low: parseFloat(low.toFixed(precision)),
+            close: parseFloat(close.toFixed(precision))
+        });
+        price = close;
+    }
+    
+    chartData = data;
+    candlestickSeries.setData(chartData);
+    
+    // Calculate and display EMA (50)
+    const emaData = calculateEMA(chartData, 50);
+    emaSeries.setData(emaData);
+    
+    livePrice = price;
+    const livePriceSpan = document.getElementById('ticker-price');
+    if (livePriceSpan) {
+        livePriceSpan.innerText = formatPrice(livePrice);
+    }
+    
+    const watchPriceSpan = document.getElementById(`watch-${symbol}`);
+    if (watchPriceSpan) {
+        watchPriceSpan.innerText = formatPrice(livePrice);
+    }
+    
+    const realRSI = calculateRSI(chartData);
+    const realATR = calculateATR(chartData);
+    document.getElementById('rsi-hud').innerText = realRSI;
+    document.getElementById('atr-hud').innerText = realATR.toFixed(precision);
+    
+    if (ASSETS[symbol]) {
+        ASSETS[symbol].atr = realATR;
+    }
+}
+
+function simulateTick() {
+    const symbol = currentSymbol;
+    const assetInfo = ASSETS[symbol] || { name: symbol, precision: 5, basePrice: 1.0, step: 0.00008, atr: 0.00075, cat: "Custom" };
+    const precision = assetInfo.precision;
+    const atr = assetInfo.atr || 0.00075;
+    
+    // Generate random walk tick
+    const change = (Math.random() - 0.5) * atr * 0.15;
+    const simulatedPrice = parseFloat((livePrice + change).toFixed(precision));
+    
+    processNewLiveTick(symbol, simulatedPrice);
+}
+
 // ───────────────────── Real-time Data Updates (No Simulation)
 async function updateChartWithRealData(symbol) {
+    if (!realtimeDataEnabled) {
+        generateMockHistory(symbol);
+        return;
+    }
+    
     const yahooSym = getYahooSymbol(symbol);
     const tfConfig = TIMEFRAMES[currentTimeframe] || TIMEFRAMES["15m"];
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSym}?interval=${tfConfig.interval}&range=${tfConfig.range}`;
@@ -557,8 +635,8 @@ async function updateChartWithRealData(symbol) {
         checkTradeConditions();
 
     } catch (error) {
-        console.error("Error updating real-time chart:", error);
-        document.getElementById('ticker-price').innerText = "Fehler";
+        console.warn("Error updating real-time chart, falling back to simulated history candles:", error);
+        generateMockHistory(symbol);
     }
 }
 
@@ -632,7 +710,10 @@ async function changeAsset(symbol) {
 
 // Live ticks updater
 async function refreshRealtimeFeed() {
-    if (!realtimeDataEnabled) return;
+    if (!realtimeDataEnabled) {
+        simulateTick();
+        return;
+    }
     
     // If Forex.com is active and streaming this symbol, do not poll Yahoo Finance!
     if (forexEnabled && forexClient && FOREX_MARKET_IDS[currentSymbol]) {
@@ -651,7 +732,12 @@ async function refreshRealtimeFeed() {
         return;
     }
     
-    await updateChartWithRealData(currentSymbol);
+    try {
+        await updateChartWithRealData(currentSymbol);
+    } catch (e) {
+        console.warn("Failed to update real chart in loop, simulating tick:", e);
+        simulateTick();
+    }
 }
 
 function formatPrice(val) {
