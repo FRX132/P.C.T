@@ -978,13 +978,17 @@ function saveTgSettings() {
 }
 
 function loadTgSettings() {
-    const token = localStorage.getItem('ptw_tg_token') || '';
-    const chatid = localStorage.getItem('ptw_tg_chatid') || '';
-    const autosend = localStorage.getItem('ptw_tg_autosend') === 'true';
+    const token = localStorage.getItem('ptw_tg_token') || '8215792678:AAFMApXlXRpzRd7oGfy8-Z0c9IPjxQGk-Fk';
+    const chatid = localStorage.getItem('ptw_tg_chatid') || '-1004360999760';
+    const autosend = localStorage.getItem('ptw_tg_autosend') !== null ? (localStorage.getItem('ptw_tg_autosend') === 'true') : true;
     
-    document.getElementById('tg-token').value = token;
-    document.getElementById('tg-chatid').value = chatid;
-    document.getElementById('tg-autosend').checked = autosend;
+    const tokenEl = document.getElementById('tg-token');
+    const chatEl = document.getElementById('tg-chatid');
+    const autoEl = document.getElementById('tg-autosend');
+    
+    if (tokenEl) tokenEl.value = token;
+    if (chatEl) chatEl.value = chatid;
+    if (autoEl) autoEl.checked = autosend;
 }
 
 async function sendTelegramSignal(trade) {
