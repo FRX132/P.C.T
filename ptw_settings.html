@@ -70,8 +70,9 @@
                     <label>Datenquelle auswählen</label>
                     <select class="input-field" id="feed-source" onchange="toggleFeedFields()" style="background:#0c0f17; color:#fff; border: 1px solid var(--border-color);">
                         <option value="yahoo">Finanzen.net Referenz (Kostenlos)</option>
+                        <option value="mt5local">MetaTrader 5 Direkt-Bridge (0 ms Lokal)</option>
                         <option value="forex">Forex.com (GAIN Capital API)</option>
-                        <option value="mt5">MetaTrader 5 (Vantage / MT5 via MetaApi)</option>
+                        <option value="mt5">MetaTrader 5 (Vantage / MT5 via MetaApi Cloud)</option>
                         <option value="massive">Massive.com API (U.S. Stocks, Forex & Commodities)</option>
                     </select>
                 </div>
@@ -128,6 +129,24 @@
                     </div>
                 </div>
 
+                <!-- MT5 Local Direct Bridge Fields -->
+                <div id="mt5local-fields-area" style="display: none;">
+                    <div class="panel-description" style="background: rgba(0, 230, 118, 0.08); padding: 12px; border-radius: 6px; border-left: 3px solid #00e676; margin-bottom: 15px;">
+                        <b style="color: #00e676;">⚡ 0 ms Broker-Latenz (Lokale Verbindung):</b><br>
+                        MetaTrader 5 sendet Live-Ticks und Kerzen direkt per <code>WebRequest()</code> an deinen lokalen Bridge-Server auf deinem Rechner.
+                    </div>
+                    <div class="input-group">
+                        <label>Lokale Bridge Server URL</label>
+                        <input type="text" class="input-field" id="mt5local-url" value="http://127.0.0.1:8080" placeholder="http://127.0.0.1:8080">
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px;">
+                        <b>Setup in 3 Schritten:</b><br>
+                        1. Starte im Mac-Terminal: <code>python3 Tools/mt5_local_bridge.py</code><br>
+                        2. Ziehe <code>PTW_Local_Bridge_EA.mq5</code> auf deinen MT5-Chart (z.B. XAUUSD).<br>
+                        3. Erlaube in MT5: <i>Extras → Optionen → Experten → WebRequest</i> für <code>http://127.0.0.1:8080</code>.
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button class="btn-exec long" style="flex: 1;" onclick="saveBrokerSettings()">Einstellungen speichern</button>
                     <button class="btn-test" id="test-conn-btn" style="width: auto; padding: 12px 20px; margin-top: 0; display: none;" onclick="testBrokerConnection()">Verbindung testen</button>
@@ -175,17 +194,22 @@
             const source = document.getElementById('feed-source').value;
             const fxArea = document.getElementById('fx-fields-area');
             const mt5Area = document.getElementById('mt5-fields-area');
+            const mt5LocalArea = document.getElementById('mt5local-fields-area');
             const massiveArea = document.getElementById('massive-fields-area');
             const testBtn = document.getElementById('test-conn-btn');
             const logEl = document.getElementById('broker-test-log');
 
             fxArea.style.display = "none";
             mt5Area.style.display = "none";
+            if (mt5LocalArea) mt5LocalArea.style.display = "none";
             massiveArea.style.display = "none";
             testBtn.style.display = "none";
             logEl.style.display = "none";
 
-            if (source === "forex") {
+            if (source === "mt5local") {
+                if (mt5LocalArea) mt5LocalArea.style.display = "block";
+                testBtn.style.display = "block";
+            } else if (source === "forex") {
                 fxArea.style.display = "block";
                 testBtn.style.display = "block";
             } else if (source === "mt5") {
@@ -201,6 +225,10 @@
             // Load Active Feed Source
             const source = localStorage.getItem('ptw_feed_source') || 'yahoo';
             document.getElementById('feed-source').value = source;
+
+            // Load MT5 Local Settings
+            const mt5LocalUrlEl = document.getElementById('mt5local-url');
+            if (mt5LocalUrlEl) mt5LocalUrlEl.value = localStorage.getItem('ptw_mt5local_url') || 'http://127.0.0.1:8080';
 
             // Load Forex.com Settings
             document.getElementById('fx-username').value = localStorage.getItem('ptw_fx_username') || '';
@@ -231,28 +259,39 @@
             const source = document.getElementById('feed-source').value;
             localStorage.setItem('ptw_feed_source', source);
 
-            if (source === "forex") {
+            if (source === "mt5local") {
+                const mt5LocalUrlEl = document.getElementById('mt5local-url');
+                localStorage.setItem('ptw_mt5local_url', mt5LocalUrlEl ? mt5LocalUrlEl.value : 'http://127.0.0.1:8080');
+                localStorage.setItem('ptw_mt5local_enabled', 'true');
+                localStorage.setItem('ptw_fx_enabled', 'false');
+                localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_massive_enabled', 'false');
+            } else if (source === "forex") {
                 localStorage.setItem('ptw_fx_username', document.getElementById('fx-username').value);
                 localStorage.setItem('ptw_fx_password', document.getElementById('fx-password').value);
                 localStorage.setItem('ptw_fx_appkey', document.getElementById('fx-appkey').value);
                 localStorage.setItem('ptw_fx_server', document.getElementById('fx-server').value);
                 localStorage.setItem('ptw_fx_enabled', 'true');
                 localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_mt5local_enabled', 'false');
                 localStorage.setItem('ptw_massive_enabled', 'false');
             } else if (source === "mt5") {
                 localStorage.setItem('ptw_mt5_token', document.getElementById('mt5-token').value);
                 localStorage.setItem('ptw_mt5_account_id', document.getElementById('mt5-account-id').value);
                 localStorage.setItem('ptw_fx_enabled', 'false');
                 localStorage.setItem('ptw_mt5_enabled', 'true');
+                localStorage.setItem('ptw_mt5local_enabled', 'false');
                 localStorage.setItem('ptw_massive_enabled', 'false');
             } else if (source === "massive") {
                 localStorage.setItem('ptw_massive_apikey', document.getElementById('massive-apikey').value);
                 localStorage.setItem('ptw_fx_enabled', 'false');
                 localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_mt5local_enabled', 'false');
                 localStorage.setItem('ptw_massive_enabled', 'true');
             } else {
                 localStorage.setItem('ptw_fx_enabled', 'false');
                 localStorage.setItem('ptw_mt5_enabled', 'false');
+                localStorage.setItem('ptw_mt5local_enabled', 'false');
                 localStorage.setItem('ptw_massive_enabled', 'false');
             }
 
@@ -394,6 +433,30 @@
                 } catch (err) {
                     logEl.className = "tg-status error";
                     logEl.innerText = `Netzwerkfehler: ${err.message}`;
+                }
+            } else if (source === "mt5local") {
+                const url = document.getElementById('mt5local-url').value || 'http://127.0.0.1:8080';
+
+                logEl.className = "tg-status";
+                logEl.style.borderLeftColor = "var(--color-info)";
+                logEl.style.color = "var(--color-info)";
+                logEl.innerText = `Testing local MT5 Direct-Bridge on ${url}...`;
+
+                try {
+                    const res = await fetch(`${url}/health`);
+                    const data = await res.json();
+                    if (res.ok && (data.status === "ok" || data.status === "ONLINE")) {
+                        const count = data.cached_symbols_count || 0;
+                        const symbols = data.symbols && data.symbols.length > 0 ? data.symbols.join(', ') : 'none';
+                        logEl.className = "tg-status success";
+                        logEl.innerText = `⚡ MT5 Direct-Bridge active! (0 ms latency). Cached symbols: ${count} (${symbols})`;
+                    } else {
+                        logEl.className = "tg-status error";
+                        logEl.innerText = `Bridge error: Invalid response from local server.`;
+                    }
+                } catch (err) {
+                    logEl.className = "tg-status error";
+                    logEl.innerText = `Bridge unreachable (${err.message}). Run: python3 Tools/mt5_local_bridge.py`;
                 }
             }
         }

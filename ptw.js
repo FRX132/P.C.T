@@ -10,6 +10,10 @@ let mt5Token = null;
 let mt5AccountId = null;
 let mt5Region = "new-york";
 
+// ───────────────────── MetaTrader 5 Local Bridge (0 ms Direkt) Setup
+let mt5LocalEnabled = false;
+let mt5LocalUrl = 'http://127.0.0.1:8080';
+
 // ───────────────────── Massive.com Connection Setup
 let massiveEnabled = false;
 let massiveApiKey = null;
@@ -702,6 +706,11 @@ async function changeAsset(symbol) {
         fetchMetaApiTick();
     }
 
+    // Fetch instant MT5 Local tick if enabled
+    if (mt5LocalEnabled) {
+        fetchMT5LocalTick();
+    }
+
     // Fetch instant Massive tick if enabled
     if (massiveEnabled && massiveApiKey) {
         fetchMassiveTick();
@@ -717,6 +726,12 @@ async function refreshRealtimeFeed() {
     
     // If Forex.com is active and streaming this symbol, do not poll Yahoo Finance!
     if (forexEnabled && forexClient && FOREX_MARKET_IDS[currentSymbol]) {
+        return;
+    }
+
+    // If MT5 Local Bridge is active, poll local bridge with 0 ms broker latency!
+    if (mt5LocalEnabled) {
+        await fetchMT5LocalTick();
         return;
     }
     
@@ -1007,16 +1022,19 @@ async function sendTelegramSignal(trade) {
     const text = 
 `🚨 *BREAKOUT SIGNAL PRO* 🚨
 
-📈 *Symbol:* ${trade.symbol} (${trade.type})
-🚀 *Entry:* ${trade.entry.toFixed(precision)}
+📊 *Symbol:* ${trade.symbol}
+📈 *Richtung / Type:* ${trade.type === 'LONG' ? '🟢 BUY / LONG' : '🔴 SELL / SHORT'}
+💲 *Aktueller Kurswert / Live Price:* ${trade.entry.toFixed(precision)}
+🚀 *Einstieg / Entry:* ${trade.entry.toFixed(precision)}
 🛡️ *Stop Loss:* ${trade.sl.toFixed(precision)}
 
-🎯 *Take Profit Level (1:3 CRV):*
-▫️ *TP1 (1:1):* ${trade.tp1.toFixed(precision)} (33%)
-▫️ *TP2 (1:2):* ${trade.tp2.toFixed(precision)} (33%)
-▫️ *TP3 (1:3):* ${trade.tp3.toFixed(precision)} (34%)
+🎯 *Take Profit Levels (1:3 R:R):*
+▫️ *TP1 (1:1 BE):* ${trade.tp1.toFixed(precision)} (33%)
+▫️ *TP2 (1:2 Target):* ${trade.tp2.toFixed(precision)} (33%)
+▫️ *TP3 (1:3 Runner):* ${trade.tp3.toFixed(precision)} (34%)
 
-⏰ *Uhrzeit:* ${trade.time} (Vienna Time)`;
+⚖️ *Positionsgröße:* 0.01 MT5 Lots (Phase 1 Compounding)
+⏰ *Timestamp:* ${trade.time} (UTC+2)`;
 
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
     
@@ -1088,6 +1106,13 @@ function loadSettings() {
         connectToMT5();
     }
 
+    // Load MT5 Local Bridge Settings
+    mt5LocalEnabled = localStorage.getItem('ptw_mt5local_enabled') === 'true';
+    mt5LocalUrl = localStorage.getItem('ptw_mt5local_url') || 'http://127.0.0.1:8080';
+    if (mt5LocalEnabled) {
+        connectToMT5Local();
+    }
+
     // Load Massive Settings
     massiveEnabled = localStorage.getItem('ptw_massive_enabled') === 'true';
     if (massiveEnabled) {
@@ -1101,18 +1126,20 @@ function loadSettings() {
     
     if (toggleLabel) {
         if (feedSource === 'yahoo') {
-            toggleLabel.innerText = "Echtzeit-Kurse (Finanzen.net)";
+            toggleLabel.innerText = "Realtime Feed (Finanzen.net)";
         } else if (feedSource === 'forex') {
-            toggleLabel.innerText = "Echtzeit-Kurse (Forex.com Live)";
+            toggleLabel.innerText = "Realtime Feed (Forex.com Live)";
         } else if (feedSource === 'mt5') {
-            toggleLabel.innerText = "Echtzeit-Kurse (MetaTrader 5 API)";
+            toggleLabel.innerText = "Realtime Feed (MetaTrader 5 API)";
+        } else if (feedSource === 'mt5local') {
+            toggleLabel.innerText = "Realtime Feed (MT5 Local 0 ms)";
         } else if (feedSource === 'massive') {
-            toggleLabel.innerText = "Echtzeit-Kurse (Massive.com API)";
+            toggleLabel.innerText = "Realtime Feed (Massive.com API)";
         }
     }
 
     if (connText && feedSource === 'yahoo') {
-        connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Echtzeit-Datenfeed (Finanzen.net)`;
+        connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>Realtime Data Feed (Finanzen.net)`;
     }
 }
 
@@ -1205,6 +1232,70 @@ async function fetchMetaApiTick() {
     } catch (e) {
         console.error("Error fetching MT5 tick:", e);
         await updateChartWithRealData(symbol);
+    }
+}
+
+// ───────────────────── MetaTrader 5 Direkt-Bridge (0 ms Lokal) Integration
+async function connectToMT5Local() {
+    if (!mt5LocalEnabled) return;
+
+    mt5LocalUrl = localStorage.getItem('ptw_mt5local_url') || 'http://127.0.0.1:8080';
+
+    const connText = document.querySelector('.conn-status');
+    if (connText) {
+        connText.innerHTML = `<span class="conn-dot" style="background:var(--color-warning);"></span>Connecting to MT5 Direct-Bridge (${mt5LocalUrl})...`;
+    }
+
+    try {
+        const res = await fetch(`${mt5LocalUrl}/health`);
+        if (res.ok) {
+            const data = await res.json();
+            if (connText) {
+                connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>MT5 Direct-Bridge (0 ms Live)`;
+            }
+            if (feedInterval) clearInterval(feedInterval);
+            feedInterval = setInterval(refreshRealtimeFeed, 1000); // Ultra-fast 1s poll for local zero latency
+            fetchMT5LocalTick();
+        } else {
+            throw new Error(`Status ${res.status}`);
+        }
+    } catch (e) {
+        console.warn("MT5 Local Bridge not reachable:", e);
+        if (connText) {
+            connText.innerHTML = `<span class="conn-dot" style="background:var(--color-short);"></span>MT5 Bridge offline (${mt5LocalUrl})`;
+        }
+    }
+}
+
+async function fetchMT5LocalTick() {
+    if (!mt5LocalEnabled) return;
+
+    const symbol = currentSymbol;
+    const url = `${mt5LocalUrl}/tick?symbol=${encodeURIComponent(symbol)}`;
+
+    try {
+        const res = await fetch(url);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && (data.price || data.bid || data.ask)) {
+                const price = data.price || ((data.bid + data.ask) / 2);
+                processNewLiveTick(symbol, price);
+
+                const connText = document.querySelector('.conn-status');
+                if (connText) {
+                    connText.innerHTML = `<span class="conn-dot" style="background:#81c784;"></span>MT5 Direct-Bridge (0 ms Live - ${symbol}: ${formatPrice(price)})`;
+                }
+            } else if (data && data.status === "no_data") {
+                const connText = document.querySelector('.conn-status');
+                if (connText) {
+                    connText.innerHTML = `<span class="conn-dot" style="background:var(--color-warning);"></span>MT5 Bridge: Waiting for ticks for ${symbol}...`;
+                }
+            }
+        } else {
+            console.error(`MT5 Local Bridge fetch error: Status ${res.status}`);
+        }
+    } catch (e) {
+        console.error("Error fetching MT5 Local Bridge tick:", e);
     }
 }
 
@@ -1437,5 +1528,5 @@ loadSettings();
 populateSymbolDropdown();
 selectSymbol("EURUSD");
 
-// Loop ticks every 4 seconds (4000ms)
-setInterval(refreshRealtimeFeed, 4000);
+// Loop ticks every 4 seconds (or 1s if MT5 Local Bridge is active)
+let feedInterval = setInterval(refreshRealtimeFeed, 4000);
